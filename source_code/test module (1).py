@@ -176,7 +176,7 @@ qualimap_loc="/home/kechanglin/biosoft/qualimap_v2.2.1/qualimap"
 qualimap_out="/home/kechanglin/data"
 
 
-# In[226]:
+# In[381]:
 
 
 
@@ -185,12 +185,22 @@ def run_cmd(cmd):
     pipe = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,stderr=subprocess.PIPE)
     stdout,stderr = pipe.communicate()
     pipe.wait()
-    if pipe.returncode != 0:
-        raise ValueError("Failed to run command :%s, error mesages: %s." % (cmd, pipe.stderr.read().decode('utf-8')))
-    else:
-        return stdout,stderr
-        # return pipe.returncode,stdout,stderr
+    # if pipe.returncode != 0:
+      #  raise ValueError("Failed to run command :%s, error mesages: %s." % (cmd, pipe.stderr.read().decode('utf-8')))
+    #else:
+    return pipe.returncode,stdout,stderr
     
+
+
+# In[346]:
+
+
+def run_ccs(input_file,output_file,env_name='py27'):
+    pipe1=subprocess.Popen('source activate '+env_name+' && '+'ccs '+input_file+' '+output_file+' && '+'conda deactivate',shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    stdout,stderr = pipe1.communicate()
+    pipe1.wait()
+    #ccs=run_cmd('source activate '+env_name+' && '+'ccs '+input_file+' '+output_file+' && '+'conda deactivate')
+    return pipe1.returncode,stdout,stderr
 
 
 # In[140]:
@@ -256,6 +266,43 @@ def md5(filepath):
 
 md5(location)
     
+
+
+# In[348]:
+
+
+ccs_result=run_ccs('/data/yangxiaoxia/bam_sequel/m54152_170704_111850.subreads.bam','/home/kechanglin/gen3ccs_new3.ccs.bam')
+ccs_result
+
+
+# In[354]:
+
+
+fastq_file=pysam.fastq('/home/kechanglin/gen3ccs_new3.ccs.bam')
+
+
+# In[358]:
+
+
+aa=os.system('samtools fastq '+'/home/kechanglin/gen3ccs_new3.ccs.bam '+'> '+'/home/kechanglin/data/newfq.fastq')
+
+
+# In[390]:
+
+
+b=run_cmd('fastp -i /home/kechanglin/data/newfq.fastq -o /home/kechanglin/data/fastp_newfq.fq')
+
+
+# In[393]:
+
+
+os.getcwd()
+
+
+# In[ ]:
+
+
+
 
 
 # In[ ]:

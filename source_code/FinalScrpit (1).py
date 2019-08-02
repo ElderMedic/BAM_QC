@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[62]:
+# In[4]:
 
 
 import logging
@@ -27,12 +27,15 @@ plat={
 #input
 
 location1="/data/yangxiaoxia/bqsr.bam"
-location2=""
+location2="/home/kechanglin/gen3ccs_new3.ccs.bam"
 location="/home/kechanglin/data/new_test.bam" #test input of bam's directory
 md5_input="2cb38082d6d46d425cb7181665e38147" #md5 of the location file
 qualimap_loc="/home/kechanglin/biosoft/qualimap_v2.2.1/qualimap"
 qualimap_out="/home/kechanglin/data"
 vsf_loc="/home/kechanglin/picard.jar"
+ccs_out="/home/kechanglin/gen3ccs_new3.ccs.bam"
+fastq_out="/home/kechanglin/data/newfq.fastq"
+fastp_out="/home/kechanglin/data/fastp_newfq.fq"
 
 
 def run_cmd(cmd):
@@ -43,6 +46,13 @@ def run_cmd(cmd):
         raise ValueError("Failed to run command :%s, error mesages: %s." % (cmd, pipe.stderr.read().decode('utf-8')))
     else:
         return stdout,stderr
+    
+def run_ccs(input_file,output_file,env_name='py27'):
+    pipe1=subprocess.Popen('source activate '+env_name+' && '+'ccs '+input_file+' '+output_file+' && '+'conda deactivate',shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    stdout,stderr = pipe1.communicate()
+    pipe1.wait()
+    #ccs=run_cmd('source activate '+env_name+' && '+'ccs '+input_file+' '+output_file+' && '+'conda deactivate')
+    return pipe1.returncode,stdout,stderr
 
 
 class FileMD5(object):
@@ -146,42 +156,54 @@ class BAMinput(object):
     
     
     def gen2_qc(self):
-        self.qc_sub_run=run_cmd(qualimap_loc+' bamqc -bam '+location+' -outdir '+qualimap_out+' -outformat PDF:HTML')
+        self.qc_sub_run=run_cmd(qualimap_loc+' bamqc -bam '+self.directory+' -outdir '+qualimap_out+' -outformat PDF:HTML')
         self.run_list=str(self.qc_sub_run[0]).split('\\n')
         self.show_run= self.run_list[20:42]
         return self.show_run
         
-            
+    
     def gen3_qc(self):
-        
-        
+        self.gen3_run=run_ccs(self.directory,ccs_out)
+        self.gen3_run_log=self.gen3_run[2]
+        self.fq_log=os.system('samtools fastq '+ccs_out+' > '+fastq_out)
+        self.fp_log=run_cmd('fastp -i '+fastq_out+' -o '+fastp_out)
+        self.fastp_report_dir=os.getcwd()
+        return self.gen3_run_log,self.fq_log,self.fp_log,self.fastp_report_dir
 
 
         
 
 if __name__ == '__main__':
 #test command    
-    testinstance=BAMinput(location)
-    # testinstance.ValidateBAM()
-    # a=testinstance.gen_identification()
-    # print(a)
-    # b=testinstance.gen2_qc()
+    testinstance=BAMinput(location2) #change this arg to run test
+    id_treatment=testinstance.gen_identification()
+    if id_treatment==True:
+        ccs_result=testinstance.gen3_qc()
+        # output gen3 result to json
+    else:
+        testinstance.ValidateBAM()
+        gen2_reslut=testinstance.gen2_qc()
+        # output gen2_result to json
+    
+    
+    
+    
     #for i in range(len(self.show_run)):
          #   print(self.show_run[i])
     # check_md5(location,md5_input)
     
 
 
-# In[63]:
+# In[ ]:
 
 
-check_md5(location,md5_input)
 
 
-# In[55]:
+
+# In[ ]:
 
 
-gen2_qc(testinstance)
+
 
 
 # In[ ]:
